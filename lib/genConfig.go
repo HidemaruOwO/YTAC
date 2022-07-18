@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+
+	"github.com/hidemaruowo/ytac/config"
 )
 
 func GenConfig() {
@@ -15,10 +17,7 @@ func GenConfig() {
 
 	fmt.Println("🔎 $YTACPATH: " + OutYtacPath)
 	fmt.Println("🔨 creating config..")
-	var configData string = `{
-	"name": "YouTube Video to Audio Converter",
-	"version": "1.0.0"
-}`
+	var configData string = config.DefaultConfig()
 	var err = ioutil.WriteFile(ytacPath+"/config.json", []byte(configData), 0644)
 	if err != nil {
 		fmt.Println("🔥 failed to create config")
