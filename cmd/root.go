@@ -12,6 +12,7 @@ import (
 // RootCmd is root command
 var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
+		lib.CheckDiffVersion()
 		fmt.Println("YTAC v" + lib.Version())
 		fmt.Println("✨ Thanks for installing YTAC!!")
 		fmt.Println("To verify the command, run:")
