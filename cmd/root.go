@@ -20,6 +20,7 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
+	lib.CheckDiffVersion()
 	cobra.OnInitialize()
 	RootCmd.AddCommand(
 		versionCmd(),
