@@ -32,8 +32,13 @@ func readConfig() string {
 
 //Config
 func Version() string {
-	var version = gjson.Get(_config, "version")
-	return version.String()
+	var value = gjson.Get(_config, "version")
+	return value.String()
+}
+
+func UseSixel() bool {
+	var value = gjson.Get(_config, "useSixel")
+	return value.Bool()
 }
 
 //Functions
