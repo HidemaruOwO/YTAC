@@ -18,20 +18,20 @@ import (
 func ShowImage(url string) error {
 	res, err := http.Get(url)
 	if err != nil {
-		fmt.Errorf("cannot get image: %v: %v", err, res.Status)
+		fmt.Errorf("🔥 Cannot get image: %v: %v", err, res.Status)
 	}
 	defer res.Body.Close()
 
 	buf, err := ioutil.ReadAll(res.Body)
 
 	if err != nil {
-		return fmt.Errorf("cannot read body %v", err)
+		return fmt.Errorf("🔥 Cannot read body %v", err)
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(buf))
 
 	if err != nil {
-		return fmt.Errorf("cannot decode image %v", err)
+		return fmt.Errorf("🔥 Cannot decode image %v", err)
 	}
 
 	enc := sixel.NewEncoder(os.Stdout)
