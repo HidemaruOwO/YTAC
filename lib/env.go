@@ -2,6 +2,7 @@ package lib
 
 import (
 	"os"
+	"path/filepath"
 )
 
 func GetYtacPath() string {
@@ -9,10 +10,11 @@ func GetYtacPath() string {
 
 	if ytacPath == "" {
 		var homeDir, _ = os.UserHomeDir()
-		ytacPath = homeDir + "/ytac"
+		ytacPath = filepath.Join(homeDir, "ytac")
 	}
 
-	ytacPath = ytacPath + ""
+	// ?
+	// ytacPath = ytacPath + ""
 
 	return ytacPath
 }

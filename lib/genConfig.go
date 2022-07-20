@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/fatih/color"
 
@@ -18,7 +19,7 @@ func GenConfig() {
 	fmt.Println("🔎 $YTACPATH: " + OutYtacPath)
 	fmt.Println("🔨 creating config..")
 	var configData string = config.DefaultConfig()
-	var err = ioutil.WriteFile(ytacPath+"/config.json", []byte(configData), 0644)
+	var err = ioutil.WriteFile(filepath.Join(ytacPath, "config.json"), []byte(configData), 0644)
 	if err != nil {
 		fmt.Println("🔥 failed to create config")
 		fmt.Println("🔨 creating " + OutYtacPath + "..")

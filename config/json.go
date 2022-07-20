@@ -4,7 +4,11 @@ func DefaultConfig() string {
 	var configData string = `{
 		"name": "YouTube Video to Audio Converter",
 		"version": "1.0.0",
-		"useSixel": true
+		"useSixel": true,
+		"developer": "hidemaruowo",
+		"key": {
+			"developer": "",
+		}
 	}`
 	return configData
 }

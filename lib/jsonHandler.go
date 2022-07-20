@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/hidemaruowo/ytac/config"
 	"github.com/tidwall/gjson"
@@ -14,26 +15,31 @@ var _config = readConfig()
 //readJson
 func readConfig() string {
 	var ytacPath string = GetYtacPath()
-	var configPath string = ytacPath + "/config.json"
+	var configPath string = filepath.Join(ytacPath, "/config.json")
 
-	var f, err = os.Open(configPath)
+	f, err := os.Open(configPath)
 	if err != nil {
 		GenConfig()
 		//log.Fatal(err)
 		readConfig()
 	}
 	defer f.Close()
-	var json, err2 = ioutil.ReadAll(f)
-	if err2 != nil {
-		log.Fatal(err2)
+	json, err := ioutil.ReadAll(f)
+	if err != nil {
+		log.Fatal(err)
 	}
 	return string(json)
 }
 
 //Config
 func Version() string {
-	var version = gjson.Get(_config, "version")
-	return version.String()
+	var value = gjson.Get(_config, "version")
+	return value.String()
+}
+
+func UseSixel() bool {
+	var value = gjson.Get(_config, "useSixel")
+	return value.Bool()
 }
 
 //Functions
