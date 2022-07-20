@@ -25,8 +25,9 @@ func getCmd() *cobra.Command {
 			if args[0] != "" {
 				download(args[0])
 			} else {
-				var errorMessage string = color.HiRedString("🔥 Please provide a video ID")
-				fmt.Println(errorMessage)
+				var errorMessage string = color.HiRedString("🔥 Please type a video ID")
+				fmt.Println(errorMessage + "\nRun:")
+				color.New(color.Bold).Println("\t" + color.BlueString("$ ") + "ytac get <video ID or video URL>")
 			}
 		},
 	}
@@ -37,7 +38,7 @@ func getCmd() *cobra.Command {
 func download(videoID string) {
 	var client = youtube.Client{}
 
-	var thumbnail string = "https://img.youtube.com/vi/" + videoID + "/default.jpg"
+	var thumbnail string = "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
 
 	video, err := client.GetVideo(videoID)
 	if err != nil {

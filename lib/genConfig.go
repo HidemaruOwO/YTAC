@@ -17,15 +17,15 @@ func GenConfig() {
 	var OutYtacPath string = color.HiBlueString(ytacPath)
 
 	fmt.Println("🔎 $YTACPATH: " + OutYtacPath)
-	fmt.Println("🔨 creating config..")
+	fmt.Println("🔨 Creating config..")
 	var configData string = config.DefaultConfig()
 	var err = ioutil.WriteFile(filepath.Join(ytacPath, "config.json"), []byte(configData), 0644)
 	if err != nil {
-		fmt.Println("🔥 failed to create config")
-		fmt.Println("🔨 creating " + OutYtacPath + "..")
+		fmt.Println("🔥 Failed to create config")
+		fmt.Println("🔨 Creating " + OutYtacPath + "..")
 		err = os.Mkdir(ytacPath, 0755)
 		if err != nil {
-			fmt.Println("🔥 failed to create " + OutYtacPath)
+			fmt.Println("🔥 Failed to create " + OutYtacPath)
 		} else {
 			printBold.Println("♻️ Restarting GenerateConfig function")
 			fmt.Println("")
