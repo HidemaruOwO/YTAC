@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+  "path/filepath"
 
 	"github.com/hidemaruowo/ytac/config"
 	"github.com/tidwall/gjson"
@@ -14,7 +15,7 @@ var _config = readConfig()
 //readJson
 func readConfig() string {
 	var ytacPath string = GetYtacPath()
-	var configPath string = ytacPath + "/config.json"
+	var configPath string = filepath.Join(ytacPath, "/config.json")
 
 	var f, err = os.Open(configPath)
 	if err != nil {
