@@ -22,10 +22,9 @@ func GenConfig() {
 	var err = ioutil.WriteFile(filepath.Join(ytacPath, "config.json"), []byte(configData), 0644)
 	if err != nil {
 		fmt.Println("🔥 Failed to create config")
-		fmt.Println("🔨 Creating " + OutYtacPath + "..")
-		err = os.Mkdir(ytacPath, 0755)
-		if err != nil {
-			fmt.Println("🔥 Failed to create " + OutYtacPath)
+		var isGenYtacDir = GenYtacDirectory()
+		if isGenYtacDir {
+			return
 		} else {
 			printBold.Println("♻️ Restarting GenerateConfig function")
 			fmt.Println("")
@@ -33,5 +32,20 @@ func GenConfig() {
 		}
 	} else {
 		printBold.Println("✨ Please restart YTAC")
+		os.Exit(0)
 	}
+}
+
+func GenYtacDirectory() bool {
+	var ytacPath string = GetYtacPath()
+	var OutYtacPath string = color.HiBlueString(ytacPath)
+
+	fmt.Println("🔨 Creating " + OutYtacPath + "..")
+	var err = os.Mkdir(ytacPath, 0755)
+	if err != nil {
+		fmt.Println("🔥 Failed to create " + OutYtacPath)
+		fmt.Errorf(err.Error())
+		return false
+	}
+	return true
 }
