@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 
@@ -36,33 +37,30 @@ func GenConfig() {
 	}
 }
 
-func GenYtacDirectory() bool {
-	var ytacPath string = GetYtacPath()
-	var OutYtacPath string = color.HiBlueString(ytacPath)
-
-	fmt.Println("🔨 Creating " + OutYtacPath + "..")
-	var err = os.Mkdir(ytacPath, 0755)
+func genDirectory(path string, outPath string) bool {
+	fmt.Println("🔨 Creating " + outPath + "..")
+	var err = os.Mkdir(path, 0755)
 	if err != nil {
-		fmt.Println("🔥 Failed to create " + OutYtacPath)
+		fmt.Println("🔥 Failed to create " + outPath)
 		fmt.Errorf(err.Error())
 		return false
 	}
 	return true
 }
 
+func GenYtacDirectory() bool {
+	var ytacPath string = GetYtacPath()
+	var outYtacPath string = color.HiBlueString(ytacPath)
+
+	return genDirectory(ytacPath, outYtacPath)
+}
+
 func GenTempDirectory() bool {
 	var ytacPath string = GetYtacPath()
 	var tempPath string = filepath.Join(ytacPath, "temp")
-	var OutTempPath string = color.HiBlueString(tempPath)
+	var outTempPath string = color.HiBlueString(tempPath)
 
-	fmt.Println("🔨 Creating " + OutTempPath + "..")
-	var err = os.Mkdir(tempPath, 0755)
-	if err != nil {
-		fmt.Println("🔥 Failed to create " + OutTempPath)
-		fmt.Errorf(err.Error())
-		return false
-	}
-	return true
+	return genDirectory(tempPath, outTempPath)
 }
 
 func GenDistDirectory() bool {
@@ -70,27 +68,14 @@ func GenDistDirectory() bool {
 	var distPath string = filepath.Join(ytacPath, "dist")
 	var OutDistPath string = color.HiBlueString(distPath)
 
-	fmt.Println("🔨 Creating " + OutDistPath + "..")
-	var err = os.Mkdir(distPath, 0755)
-	if err != nil {
-		fmt.Println("🔥 Failed to create " + OutDistPath)
-		fmt.Errorf(err.Error())
-		return false
-	}
-	return true
+	return genDirectory(distPath, OutDistPath)
 }
 
 func GenDistTodayDirectory() bool {
 	var ytacPath string = GetYtacPath()
-	var todayPath string = filepath.Join(ytacPath, "dist")
-	var todayPath string = color.HiBlueString(distPath)
+	var today string = time.Now().Format("2022-3-34")
+	var todayPath string = filepath.Join(ytacPath, today)
+	var outTodayPath string = color.HiBlueString(todayPath)
 
-	fmt.Println("🔨 Creating " + OutDistPath + "..")
-	var err = os.Mkdir(distPath, 0755)
-	if err != nil {
-		fmt.Println("🔥 Failed to create " + OutDistPath)
-		fmt.Errorf(err.Error())
-		return false
-	}
-	return true
+	return genDirectory(todayPath, outTodayPath)
 }
