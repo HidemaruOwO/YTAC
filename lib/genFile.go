@@ -26,7 +26,7 @@ func GenConfig() {
 		if isGenYtacDir {
 			return
 		} else {
-			printBold.Println("♻️ Restarting GenerateConfig function")
+			printBold.Println("♻️  Restarting GenerateConfig function")
 			fmt.Println("")
 			GenConfig()
 		}
