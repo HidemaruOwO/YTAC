@@ -56,9 +56,25 @@ func GenTempDirectory() bool {
 	var OutTempPath string = color.HiBlueString(tempPath)
 
 	fmt.Println("🔨 Creating " + OutTempPath + "..")
-	var err = os.Mkdir(ytacPath, 0755)
+	var err = os.Mkdir(tempPath, 0755)
 	if err != nil {
 		fmt.Println("🔥 Failed to create " + OutTempPath)
+		fmt.Errorf(err.Error())
+		return false
+	}
+	return true
+
+}
+
+func GenDistDirectory() bool {
+	var ytacPath string = GetYtacPath()
+	var distPath string = filepath.Join(ytacPath, "dist")
+	var OutDistPath string = color.HiBlueString(distPath)
+
+	fmt.Println("🔨 Creating " + OutDistPath + "..")
+	var err = os.Mkdir(distPath, 0755)
+	if err != nil {
+		fmt.Println("🔥 Failed to create " + OutDistPath)
 		fmt.Errorf(err.Error())
 		return false
 	}
