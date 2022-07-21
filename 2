@@ -55,10 +55,10 @@ func GenTempDirectory() bool {
 	var tempPath string = filepath.Join(ytacPath, "temp")
 	var OutTempPath string = color.HiBlueString(tempPath)
 
-	fmt.Println("🔨 Creating " + OutTempPath + "..")
+	fmt.Println("🔨 Creating " + OutYtacPath + "..")
 	var err = os.Mkdir(ytacPath, 0755)
 	if err != nil {
-		fmt.Println("🔥 Failed to create " + OutTempPath)
+		fmt.Println("🔥 Failed to create " + OutYtacPath)
 		fmt.Errorf(err.Error())
 		return false
 	}
