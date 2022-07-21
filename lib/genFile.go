@@ -63,7 +63,6 @@ func GenTempDirectory() bool {
 		return false
 	}
 	return true
-
 }
 
 func GenDistDirectory() bool {
@@ -79,5 +78,19 @@ func GenDistDirectory() bool {
 		return false
 	}
 	return true
+}
 
+func GenDistTodayDirectory() bool {
+	var ytacPath string = GetYtacPath()
+	var todayPath string = filepath.Join(ytacPath, "dist")
+	var todayPath string = color.HiBlueString(distPath)
+
+	fmt.Println("🔨 Creating " + OutDistPath + "..")
+	var err = os.Mkdir(distPath, 0755)
+	if err != nil {
+		fmt.Println("🔥 Failed to create " + OutDistPath)
+		fmt.Errorf(err.Error())
+		return false
+	}
+	return true
 }
