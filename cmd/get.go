@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strconv"
 
 	"path/filepath"
 
@@ -16,14 +18,28 @@ import (
 
 var videoPath = ""
 
+var printBold = color.New(color.Bold)
+
 func getCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "get",
 		Short: "Download a video from YouTube",
 		Long:  `Download a video from YouTube`,
 		Run: func(cmd *cobra.Command, args []string) {
+			var isYouTubeURL = regexp.MustCompile(`^(?:https|http):\/\/(youtube\.com)(?:\/(?:.*)|\?(?:.*)|$)$`)
+			var getVideoURL = regexp.MustCompile(`\?v=([^&]+)`)
+			var index int = 0
+			var value string = ""
+
 			if args[0] != "" {
-				download(args[0])
+				for index, value = range args {
+					if isYouTubeURL.MatchString(value) {
+						var videoID = getVideoURL.FindString(value)
+						ytac(videoID, index)
+					} else {
+						ytac(value, index)
+					}
+				}
 			} else {
 				var errorMessage string = color.HiRedString("🔥 Please type a video ID")
 				fmt.Println(errorMessage + "\nRun:")
@@ -35,15 +51,20 @@ func getCmd() *cobra.Command {
 	return cmd
 }
 
+func ytac(videoID string, index int) {
+	printBold.Println("✨ " + strconv.Itoa(index) + ", Running YTAC...")
+}
+
 func download(videoID string) {
 	var client = youtube.Client{}
-	var printBold = color.New(color.Bold)
 
 	var thumbnail string = "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
 
 	video, err := client.GetVideo(videoID)
 	if err != nil {
+
 		panic(err)
+		printBold.Println("🔥 " + color.HiRedString("No YouTube videos were found with that VideoID") + "\nThe video may not exist or may be a private video")
 	}
 
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
