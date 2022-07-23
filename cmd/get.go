@@ -66,8 +66,9 @@ func download(videoID string) {
 
 	video, err := client.GetVideo(videoID)
 	if err != nil {
-		panic(err)
 		printBold.Println("🔥 " + color.HiRedString("No YouTube videos were found with that VideoID") + "\nThe video may not exist or may be a private video")
+		panic(err)
+
 	}
 
 	printBold.Println("🔎 Found a " + color.HiBlueString(video.Title) + " video")
@@ -93,11 +94,9 @@ func download(videoID string) {
 	}
 	defer file.Close()
 
-	var tmpl = `{{ red "With funcs:" }} {{ bar . "<" "-" (cycle . "↖" "↗" "↘" "↙" ) "." ">"}} {{speed . | rndcolor }} {{percent .}} {{string . "my_green_string" | green}} {{string . "my_blue_string" | blue}}`
+	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (yellow ">") "." "]"}} {{speed . | rndcolor }} {{percent .}}`
 
 	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
-
-	bar.Set("my_green_string", "green").Set("my_blue_string", "blue").Set(pb.Bytes, true)
 
 	//var reader = io.LimitReader(rand.Reader, int64(n))
 	var barReader = bar.NewProxyReader(stream)
