@@ -55,7 +55,7 @@ func getCmd() *cobra.Command {
 
 func ytac(videoID string, index int) {
 
-	printBold.Println("✨ " + strconv.Itoa(index) + ", Running YTAC...")
+	printBold.Println("✨ " + strconv.Itoa(index+1) + ", Running YTAC...")
 	download(videoID)
 }
 
@@ -94,7 +94,7 @@ func download(videoID string) {
 	}
 	defer file.Close()
 
-	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (yellow ">") "." "]"}} {{speed . | rndcolor }} {{percent .}}`
+	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor ">") "." "]"}} {{speed . | green }} {{percent .}}`
 
 	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
 
