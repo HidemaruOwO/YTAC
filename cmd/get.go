@@ -53,6 +53,7 @@ func getCmd() *cobra.Command {
 
 func ytac(videoID string, index int) {
 	printBold.Println("✨ " + strconv.Itoa(index) + ", Running YTAC...")
+	download(videoID)
 }
 
 func download(videoID string) {
@@ -62,9 +63,14 @@ func download(videoID string) {
 
 	video, err := client.GetVideo(videoID)
 	if err != nil {
-
 		panic(err)
 		printBold.Println("🔥 " + color.HiRedString("No YouTube videos were found with that VideoID") + "\nThe video may not exist or may be a private video")
+	}
+
+	printBold.Println("🔎 Found a " + color.HiBlueString(video.Title) + " video")
+
+	if lib.UseSixel() == true {
+		lib.ShowImage(thumbnail)
 	}
 
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
@@ -87,8 +93,5 @@ func download(videoID string) {
 	_, err = io.Copy(file, stream)
 	if err != nil {
 		panic(err)
-	}
-	if lib.UseSixel() == true {
-		lib.ShowImage(thumbnail)
 	}
 }
