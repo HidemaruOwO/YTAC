@@ -31,7 +31,7 @@ func getCmd() *cobra.Command {
 			var index int = 0
 			var value string = ""
 
-			if args[0] != "" {
+			if len(args) != 0 {
 				for index, value = range args {
 					if isYouTubeURL.MatchString(value) {
 						var videoID = getVideoURL.FindString(value)
