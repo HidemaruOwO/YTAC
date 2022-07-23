@@ -37,6 +37,7 @@ func getCmd() *cobra.Command {
 
 func download(videoID string) {
 	var client = youtube.Client{}
+	var printBold = color.New(color.Bold)
 
 	var thumbnail string = "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
 
@@ -55,7 +56,10 @@ func download(videoID string) {
 
 	file, err := os.Create(videoPath)
 	if err != nil {
-		panic(err)
+		fmt.Println("🔥 Failed to create video file")
+		lib.GenTempDirectory()
+		printBold.Println("♻️  Restarting donwload function")
+		download(videoID)
 	}
 	defer file.Close()
 
