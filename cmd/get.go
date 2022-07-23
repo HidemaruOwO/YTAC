@@ -94,7 +94,7 @@ func download(videoID string) {
 	}
 	defer file.Close()
 
-	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor ">") "." "]"}} {{speed . | green }} {{percent .}}`
+	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
 
 	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
 
