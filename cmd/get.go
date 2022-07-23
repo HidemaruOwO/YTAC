@@ -9,6 +9,7 @@ import (
 
 	"path/filepath"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/fatih/color"
 	"github.com/kkdai/youtube/v2"
 	"github.com/spf13/cobra"
@@ -17,6 +18,7 @@ import (
 )
 
 var videoPath = ""
+var p [1]byte
 
 var printBold = color.New(color.Bold)
 
@@ -75,7 +77,7 @@ func download(videoID string) {
 	}
 
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
-	stream, _, err := client.GetStream(video, &formats[0])
+	stream, size, err := client.GetStream(video, &formats[0])
 	if err != nil {
 		panic(err)
 	}
@@ -90,22 +92,19 @@ func download(videoID string) {
 		download(videoID)
 	}
 	defer file.Close()
-	/*
-		var bar = progressbar.NewOptions(1000,
-			progressbar.OptionEnableColorCodes(true),
-			progressbar.OptionShowBytes(true),
-			progressbar.OptionSetWidth(40),
-			progressbar.OptionSetDescription("[cyan][1/3][reset] Downloading video file..."),
-			progressbar.OptionSetTheme(progressbar.Theme{
-				Saucer:        "[green]=[reset]",
-				SaucerHead:    "[green]>[reset]",
-				SaucerPadding: " ",
-				BarStart:      "[",
-				BarEnd:        "]",
-			}))
-	*/
-	_, err = io.Copy(file, stream)
+
+	var tmpl = `{{ red "With funcs:" }} {{ bar . "<" "-" (cycle . "↖" "↗" "↘" "↙" ) "." ">"}} {{speed . | rndcolor }} {{percent .}} {{string . "my_green_string" | green}} {{string . "my_blue_string" | blue}}`
+
+	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
+
+	bar.Set("my_green_string", "green").Set("my_blue_string", "blue").Set(pb.Bytes, true)
+
+	//var reader = io.LimitReader(rand.Reader, int64(n))
+	var barReader = bar.NewProxyReader(stream)
+
+	_, err = io.Copy(file, barReader)
 	if err != nil {
 		panic(err)
 	}
+	bar.Finish()
 }

@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
+	github.com/cheggaaa/pb/v3 v3.1.0 // indirect
 	github.com/dlclark/regexp2 v1.4.1-0.20201116162257-a2a8dda75c91 // indirect
 	github.com/dop251/goja v0.0.0-20220516123900-4418d4575a41 // indirect
 	github.com/fatih/color v1.13.0 // indirect
