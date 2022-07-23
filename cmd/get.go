@@ -26,7 +26,7 @@ func getCmd() *cobra.Command {
 		Short: "Download a video from YouTube",
 		Long:  `Download a video from YouTube`,
 		Run: func(cmd *cobra.Command, args []string) {
-			var isYouTubeURL = regexp.MustCompile(`^(?:https|http):\/\/(youtube\.com)(?:\/(?:.*)|\?(?:.*)|$)$`)
+			var isYouTubeURL = regexp.MustCompile(`^(?:https|http):\/\/(www\.youtube\.com)(?:\/(?:.*)|\?(?:.*)|$)$`)
 			var getVideoURL = regexp.MustCompile(`\?v=([^&]+)`)
 			var index int = 0
 			var value string = ""
@@ -34,7 +34,7 @@ func getCmd() *cobra.Command {
 			if len(args) != 0 {
 				for index, value = range args {
 					if isYouTubeURL.MatchString(value) {
-						var videoID = getVideoURL.FindString(value)
+						var videoID = getVideoURL.FindStringSubmatch(value)[1]
 						ytac(videoID, index)
 					} else {
 						ytac(value, index)
@@ -52,6 +52,7 @@ func getCmd() *cobra.Command {
 }
 
 func ytac(videoID string, index int) {
+
 	printBold.Println("✨ " + strconv.Itoa(index) + ", Running YTAC...")
 	download(videoID)
 }
@@ -79,7 +80,7 @@ func download(videoID string) {
 		panic(err)
 	}
 
-	videoPath = filepath.Join(lib.GetYtacPath(), "temp", video.Title+"-"+videoID+".mp4")
+	videoPath = filepath.Join(lib.GetYtacPath(), "temp", videoID+".mp4")
 
 	file, err := os.Create(videoPath)
 	if err != nil {
@@ -89,7 +90,20 @@ func download(videoID string) {
 		download(videoID)
 	}
 	defer file.Close()
-
+	/*
+		var bar = progressbar.NewOptions(1000,
+			progressbar.OptionEnableColorCodes(true),
+			progressbar.OptionShowBytes(true),
+			progressbar.OptionSetWidth(40),
+			progressbar.OptionSetDescription("[cyan][1/3][reset] Downloading video file..."),
+			progressbar.OptionSetTheme(progressbar.Theme{
+				Saucer:        "[green]=[reset]",
+				SaucerHead:    "[green]>[reset]",
+				SaucerPadding: " ",
+				BarStart:      "[",
+				BarEnd:        "]",
+			}))
+	*/
 	_, err = io.Copy(file, stream)
 	if err != nil {
 		panic(err)
