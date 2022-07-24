@@ -13,6 +13,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/kkdai/youtube/v2"
 	"github.com/spf13/cobra"
+	"github.com/u2takey/ffmpeg-go"
 
 	"github.com/hidemaruowo/ytac/lib"
 )
@@ -106,4 +107,8 @@ func download(videoID string) {
 		panic(err)
 	}
 	bar.Finish()
+}
+
+func audioConv() {
+	var ffmpeg = ffmpeg.New()
 }
