@@ -48,7 +48,10 @@ func getCmd() *cobra.Command {
 					}
 				}
 				var tempPath string = filepath.Join(lib.GetYtacPath(), "temp")
-				os.RemoveAll(tempPath)
+				err := removeContents(tempPath)
+				if err != nil {
+					panic(err)
+				}
 			} else {
 				var errorMessage string = color.HiRedString("🔥 Please type a video ID")
 				fmt.Println(errorMessage + "\nRun:")
@@ -160,4 +163,23 @@ func checkCmdFFMPEG() {
 		printBold.Println("🔎 Download Page: " + color.HiBlueString("https://ffmpeg.org/download.html"))
 		os.Exit(1)
 	}
+}
+
+func removeContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
