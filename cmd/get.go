@@ -124,7 +124,7 @@ func audioConv(videoPath string, videoTitle string) string {
 	videoTitle = strings.Replace(videoTitle, "/", "", -1)
 	videoTitle = strings.Replace(videoTitle, "\\", "", -1)
 	// progress bar setting
-	var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}}`
+	var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
 	var max int64 = 100
 	var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
 
