@@ -100,6 +100,7 @@ func download(videoID string) (string, string) {
 		lib.GenTempDirectory()
 		printBold.Println("♻️  Restarting donwload function")
 		download(videoID)
+		return videoPath, video.Title
 	}
 	defer file.Close()
 
