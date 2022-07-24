@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path"
 	"regexp"
 	"strconv"
+	"strings"
+	"time"
 
 	"path/filepath"
 
@@ -13,7 +17,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/kkdai/youtube/v2"
 	"github.com/spf13/cobra"
-	"github.com/u2takey/ffmpeg-go"
+	ffmpeg_go "github.com/u2takey/ffmpeg-go"
 
 	"github.com/hidemaruowo/ytac/lib"
 )
@@ -43,6 +47,8 @@ func getCmd() *cobra.Command {
 						ytac(value, index)
 					}
 				}
+				var tempPath string = filepath.Join(lib.GetYtacPath(), "temp")
+				os.RemoveAll(tempPath)
 			} else {
 				var errorMessage string = color.HiRedString("🔥 Please type a video ID")
 				fmt.Println(errorMessage + "\nRun:")
@@ -55,12 +61,14 @@ func getCmd() *cobra.Command {
 }
 
 func ytac(videoID string, index int) {
-
+	checkCmdFFMPEG()
 	printBold.Println("✨ " + strconv.Itoa(index+1) + ", Running YTAC...")
-	download(videoID)
+	var videoPath, videoTitle = download(videoID)
+	var audioPath string = audioConv(videoPath, videoTitle)
+	printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(audioPath))
 }
 
-func download(videoID string) {
+func download(videoID string) (string, string) {
 	var client = youtube.Client{}
 
 	var thumbnail string = "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
@@ -107,8 +115,48 @@ func download(videoID string) {
 		panic(err)
 	}
 	bar.Finish()
+	return videoPath, video.Title
 }
 
-func audioConv() {
-	var ffmpeg = ffmpeg.New()
+func audioConv(videoPath string, videoTitle string) string {
+	var today string = time.Now().Format("2006-01-02")
+	var distPath string = path.Join(lib.GetYtacPath(), "dist")
+	videoTitle = strings.Replace(videoTitle, "/", "", -1)
+	videoTitle = strings.Replace(videoTitle, "\\", "", -1)
+	// progress bar setting
+	var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}}`
+	var max int64 = 100
+	var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
+
+	var audioPath string = path.Join(distPath, today, videoTitle+".mp3")
+	for i := 0; i < 70; i++ {
+		bar.Increment()
+		time.Sleep(time.Millisecond * 30)
+	}
+	var err = ffmpeg_go.Input(videoPath).Output(audioPath).OverWriteOutput().Run()
+	if err != nil {
+		bar.Finish()
+		fmt.Println("🔥 Failed to convert video to audio")
+		if f, err := os.Stat(distPath); os.IsNotExist(err) || !f.IsDir() {
+			lib.GenDistDirectory()
+		}
+		lib.GenDistTodayDirectory()
+		printBold.Println("♻️  Restarting audioConv function")
+		audioConv(videoPath, videoTitle)
+	}
+	for i := 0; i < 30; i++ {
+		bar.Increment()
+		time.Sleep(time.Millisecond * 30)
+	}
+	bar.Finish()
+	return audioPath
+}
+
+func checkCmdFFMPEG() {
+	cmd := exec.Command("ffmpeg", "-version")
+	if err := cmd.Run(); err != nil {
+		fmt.Println("🔥 Failed to run ffmpeg command\nPlease install ffmpeg and set env path")
+		printBold.Println("🔎 Download Page: " + color.HiBlueString("https://ffmpeg.org/download.html"))
+		os.Exit(1)
+	}
 }
