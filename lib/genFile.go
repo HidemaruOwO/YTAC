@@ -73,8 +73,8 @@ func GenDistDirectory() bool {
 
 func GenDistTodayDirectory() bool {
 	var ytacPath string = GetYtacPath()
-	var today string = time.Now().Format("2022-3-34")
-	var todayPath string = filepath.Join(ytacPath, today)
+	var today string = time.Now().Format("2006-01-02")
+	var todayPath string = filepath.Join(ytacPath, "dist", today)
 	var outTodayPath string = color.HiBlueString(todayPath)
 
 	return genDirectory(todayPath, outTodayPath)
