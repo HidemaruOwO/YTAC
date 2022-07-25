@@ -13,7 +13,7 @@ import (
 
 	"path/filepath"
 
-	"github.com/cheggaaa/pb/v3"
+	// "github.com/cheggaaa/pb/v3"
 	"github.com/fatih/color"
 	"github.com/kkdai/youtube/v2"
 	"github.com/spf13/cobra"
@@ -69,14 +69,19 @@ func getCmd() *cobra.Command {
 
 func ytac(videoID string, index int, status chan<- string) {
 	chAudioConv := make(chan string)
-	defer close(chAudioConv)
+  var pathTitle [2]string
+  var convertList [][2]string
 	printBold.Println("✨ " + strconv.Itoa(index+1) + ", Running YTAC...")
-	var videoPath, videoTitle = download(videoID)
+	pathTitle[0], pathTitle[1] = download(videoID)
+  convertList = append(convertList, pathTitle)
+
   // TODO for文で回せるようにしたい
-	go audioConv(videoPath, videoTitle, chAudioConv)
+  for _, pt := range convertList {
+    go audioConv(videoPath, pt[1], chAudioConv)
+  }
 	audioPath := <-chAudioConv
+	defer close(chAudioConv)
 	printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(audioPath))
-	status <- ""
 }
 
 func download(videoID string) (string, string) {
@@ -93,12 +98,13 @@ func download(videoID string) (string, string) {
 
 	printBold.Println("🔎 Found a " + color.HiBlueString(video.Title) + " video")
 
+  // Sixel表示を無効化
 	// if lib.UseSixel() == true {
 	// 	lib.ShowImage(thumbnail)
 	// }
 
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
-	stream, size, err := client.GetStream(video, &formats[0])
+	stream, _, err := client.GetStream(video, &formats[0])
 	if err != nil {
 		panic(err)
 	}
@@ -106,6 +112,7 @@ func download(videoID string) (string, string) {
 	videoPath = filepath.Join(lib.GetYtacPath(), "temp", videoID+".mp4")
 
 	file, err := os.Create(videoPath)
+	defer file.Close()
 	if err != nil {
 		fmt.Println("🔥 Failed to create video file")
 		lib.GenTempDirectory()
@@ -113,21 +120,25 @@ func download(videoID string) (string, string) {
 		download(videoID)
 		return videoPath, video.Title
 	}
-	defer file.Close()
 
-	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
-
+  _, err = io.Copy(file, stream)
+  if err != nil {
+    panic(err)
+  }
+	// var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
+	//
   // FIXME 並列で動くようにした結果、Convertのプログレスバーと重なってしまったので修正する
-	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
+	// var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
 
 	//var reader = io.LimitReader(rand.Reader, int64(n))
-	var barReader = bar.NewProxyReader(stream)
+	// var barReader = bar.NewProxyReader(stream)
 
-	_, err = io.Copy(file, barReader)
-	if err != nil {
-		panic(err)
-	}
-	bar.Finish()
+	// _, err = io.Copy(file, barReader)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// bar.Finish()
+  fmt.Println("Done!")
 	return videoPath, video.Title
 }
 
@@ -137,18 +148,18 @@ func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
 	videoTitle = strings.Replace(videoTitle, "/", "", -1)
 	videoTitle = strings.Replace(videoTitle, "\\", "", -1)
 	// progress bar setting
-	var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
-	var max int64 = 100
-	var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
+	// var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
+	// var max int64 = 100
+	// var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
 
 	var audioPath string = path.Join(distPath, today, videoTitle+".mp3")
-	for i := 0; i < 70; i++ {
-		bar.Increment()
-		time.Sleep(time.Millisecond * 30)
-	}
+	// for i := 0; i < 70; i++ {
+	// 	bar.Increment()
+	// 	time.Sleep(time.Millisecond * 30)
+	// }
 	var err = ffmpeg_go.Input(videoPath).Output(audioPath).OverWriteOutput().Run()
 	if err != nil {
-		bar.Finish()
+		// bar.Finish()
 		fmt.Println("🔥 Failed to convert video to audio")
 		if f, err := os.Stat(distPath); os.IsNotExist(err) || !f.IsDir() {
 			lib.GenDistDirectory()
@@ -157,11 +168,11 @@ func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
 		printBold.Println("♻️  Restarting audioConv function")
 		audioConv(videoPath, videoTitle, chAudiPath)
 	}
-	for i := 0; i < 30; i++ {
-		bar.Increment()
-		time.Sleep(time.Millisecond * 30)
-	}
-	bar.Finish()
+	// for i := 0; i < 30; i++ {
+	// 	bar.Increment()
+	// 	time.Sleep(time.Millisecond * 30)
+	// }
+	// bar.Finish()
 	chAudiPath <- audioPath
 }
 
