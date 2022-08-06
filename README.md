@@ -1,4 +1,4 @@
-# YouTube Video to Audio Converter(fork)
+# YouTube Video to Audio Converter
 
 This is a CLI application to download videos from YouTube and convert them to audio files
 

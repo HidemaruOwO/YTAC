@@ -105,6 +105,7 @@ func download(videoID string) (string, string) {
 
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
 	stream, _, err := client.GetStream(video, &formats[0])
+
 	if err != nil {
 		panic(err)
 	}
@@ -113,6 +114,7 @@ func download(videoID string) (string, string) {
 
 	file, err := os.Create(videoPath)
 	defer file.Close()
+
 	if err != nil {
 		fmt.Println("🔥 Failed to create video file")
 		lib.GenTempDirectory()
@@ -160,6 +162,7 @@ func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
 	var err = ffmpeg_go.Input(videoPath).Output(audioPath).OverWriteOutput().Run()
 	if err != nil {
 		// bar.Finish()
+
 		fmt.Println("🔥 Failed to convert video to audio")
 		if f, err := os.Stat(distPath); os.IsNotExist(err) || !f.IsDir() {
 			lib.GenDistDirectory()
