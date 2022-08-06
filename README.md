@@ -1,11 +1,3 @@
-このリポジトリは[YouTube-Video-to-Audio-Converter](https://github.com/HidemaruOwO/YouTube-Video-to-Audio-Converter)のforkです。
-
-このリポジトリでは主に以下の改善を行います。
-
-- 処理の並列化、高速化
-- 動画の保存のオプション化
-- UIの改善
-
 # YouTube Video to Audio Converter(fork)
 
 This is a CLI application to download videos from YouTube and convert them to audio files
