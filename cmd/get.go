@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -14,6 +16,7 @@ import (
 	"path/filepath"
 
 	// "github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/fatih/color"
 	"github.com/kkdai/youtube/v2"
 	"github.com/spf13/cobra"
@@ -69,43 +72,35 @@ func getCmd() *cobra.Command {
 
 func ytac(videoID string, index int, status chan<- string) {
 	chAudioConv := make(chan string)
-  var pathTitle [2]string
-  var convertList [][2]string
+	var pathTitle [2]string
+	var convertList [][2]string
 	printBold.Println("✨ " + strconv.Itoa(index+1) + ", Running YTAC...")
 	pathTitle[0], pathTitle[1] = download(videoID)
-  convertList = append(convertList, pathTitle)
+	convertList = append(convertList, pathTitle)
 
-  // TODO for文で回せるようにしたい
-  for _, pt := range convertList {
-    go audioConv(videoPath, pt[1], chAudioConv)
-  }
+	// TODO for文で回せるようにしたい
+	for _, pt := range convertList {
+		go audioConv(videoPath, pt[1], chAudioConv)
+	}
 	audioPath := <-chAudioConv
 	defer close(chAudioConv)
 	printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(audioPath))
 }
 
 func download(videoID string) (string, string) {
-  // TODO gorutineで表示がバラバラになってしまったので、表示内容をまとめて管理するようにする。
-	client := youtube.Client{}
+	var client = youtube.Client{}
 
-	// thumbnail := "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
+	var thumbnail string = "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
 
 	video, err := client.GetVideo(videoID)
 	if err != nil {
 		printBold.Println("🔥 " + color.HiRedString("No YouTube videos were found with that VideoID") + "\nThe video may not exist or may be a private video")
 		panic(err)
+
 	}
 
-	printBold.Println("🔎 Found a " + color.HiBlueString(video.Title) + " video")
-
-  // Sixel表示を無効化
-	// if lib.UseSixel() == true {
-	// 	lib.ShowImage(thumbnail)
-	// }
-
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
-	stream, _, err := client.GetStream(video, &formats[0])
-
+	stream, size, err := client.GetStream(video, &formats[0])
 	if err != nil {
 		panic(err)
 	}
@@ -113,8 +108,6 @@ func download(videoID string) (string, string) {
 	videoPath = filepath.Join(lib.GetYtacPath(), "temp", videoID+".mp4")
 
 	file, err := os.Create(videoPath)
-	defer file.Close()
-
 	if err != nil {
 		fmt.Println("🔥 Failed to create video file")
 		lib.GenTempDirectory()
@@ -122,25 +115,23 @@ func download(videoID string) (string, string) {
 		download(videoID)
 		return videoPath, video.Title
 	}
+	defer file.Close()
 
-  _, err = io.Copy(file, stream)
-  if err != nil {
-    panic(err)
-  }
-	// var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
-	//
-  // FIXME 並列で動くようにした結果、Convertのプログレスバーと重なってしまったので修正する
-	// var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
+	printBold.Println("🔎 Found a " + color.HiBlueString(video.Title))
+	if lib.UseSixel() == true {
+		lib.ShowImage(thumbnail)
+	}
 
+	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
+	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
 	//var reader = io.LimitReader(rand.Reader, int64(n))
-	// var barReader = bar.NewProxyReader(stream)
+	var barReader = bar.NewProxyReader(stream)
+	_, err = io.Copy(file, barReader)
+	if err != nil {
+		panic(err)
+	}
+	bar.Finish()
 
-	// _, err = io.Copy(file, barReader)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// bar.Finish()
-  fmt.Println("Done!")
 	return videoPath, video.Title
 }
 
@@ -159,6 +150,7 @@ func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
 	// 	bar.Increment()
 	// 	time.Sleep(time.Millisecond * 30)
 	// }
+	log.SetOutput(ioutil.Discard)
 	var err = ffmpeg_go.Input(videoPath).Output(audioPath).OverWriteOutput().Run()
 	if err != nil {
 		// bar.Finish()
@@ -180,7 +172,7 @@ func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
 }
 
 func CheckCmdFFMPEG() {
-  // FIXME mainで呼び出すように変更したので、libに移動するのが望ましい
+	// FIXME mainで呼び出すように変更したので、libに移動するのが望ましい
 	cmd := exec.Command("ffmpeg", "-version")
 	if err := cmd.Run(); err != nil {
 		fmt.Println("🔥 Failed to run ffmpeg command\nPlease install ffmpeg and set env path")
