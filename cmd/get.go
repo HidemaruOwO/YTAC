@@ -58,6 +58,8 @@ func getCmd() *cobra.Command {
 				for _, value = range args {
 					fmt.Println(value)
 				}
+				fmt.Println(len(args))
+
 				// read url loop
 				status := make(chan string)
 				defer close(status)
@@ -66,26 +68,28 @@ func getCmd() *cobra.Command {
 					go ytac(value, index, status)
 				}
 				// progress bar setting
-				var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
+				var tmpl = `{{ red "💿 Converting:" }} {{ bar . "[" (yellow "=") (rndcolor "~>") "." "]"}} {{percent .}}`
 				var max int64 = int64(len(args))
 				var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
 				var applyConverted int = converted
-				for i := 0; i < applyConverted; i++ {
+				if len(args) == 1 {
 					bar.Increment()
-					time.Sleep(time.Millisecond * 30)
-				}
-				for {
-					if applyConverted != converted {
-						for i := 0; converted-applyConverted > i; i++ {
-							bar.Increment()
-							time.Sleep(time.Millisecond * 30)
-						}
-						fmt.Println(applyConverted)
-						fmt.Println(converted)
-					} else {
-						break
+				} else {
+					for i := 0; i < applyConverted; i++ {
+						bar.Increment()
+						time.Sleep(time.Millisecond * 30)
 					}
-					time.Sleep(time.Millisecond * 500)
+					for {
+						if applyConverted != converted {
+							for i := 0; converted-applyConverted > i; i++ {
+								bar.Increment()
+								time.Sleep(time.Millisecond * 30)
+							}
+						} else {
+							break
+						}
+						time.Sleep(time.Millisecond * 500)
+					}
 				}
 
 				bar.Finish()
@@ -114,13 +118,13 @@ func getCmd() *cobra.Command {
 // TODOEND その後は変換処理が終わったあと、出力先をまとめて出力する
 func ytac(videoID string, index int, status chan<- string) {
 	// TODO for文で回せるようにしたい
+	chAudioConv := make(chan string)
 	for _, pt := range convertList {
-		chAudioConv := make(chan string)
 		go audioConv(videoPath, pt[1], chAudioConv)
 		audioPath := <-chAudioConv
 		savedPathes = append(savedPathes, audioPath)
-		defer close(chAudioConv)
 	}
+	defer close(chAudioConv)
 }
 
 func download(videoID string) (string, string) {
@@ -157,7 +161,7 @@ func download(videoID string) (string, string) {
 		lib.ShowImage(thumbnail)
 	}
 
-	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
+	var tmpl = `{{ red "🎥 Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
 	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
 	var barReader = bar.NewProxyReader(stream)
 	_, err = io.Copy(file, barReader)
