@@ -41,7 +41,18 @@ func getCmd() *cobra.Command {
 			var getVideoURL = regexp.MustCompile(`\?v=([^&]+)`)
 			var index int = 0
 			var value string
-			args = removeArrayDuplicate(args)
+
+			var videoIDs []string
+
+			for _, value = range args {
+				if isYouTubeURL.MatchString(value) {
+					videoIDs = append(videoIDs, getVideoURL.FindStringSubmatch(value)[1])
+				} else {
+					videoIDs = append(videoIDs, value)
+				}
+			}
+
+			args = removeArrayDuplicate(videoIDs)
 
 			if len(args) != 0 {
 				for _, value = range args {
@@ -51,14 +62,8 @@ func getCmd() *cobra.Command {
 				status := make(chan string)
 				defer close(status)
 				for index, value = range args {
-					if isYouTubeURL.MatchString(value) {
-						var videoID = getVideoURL.FindStringSubmatch(value)[1]
-						runDownload(videoID)
-						go ytac(videoID, index, status)
-					} else {
-						runDownload(value)
-						go ytac(value, index, status)
-					}
+					runDownload(value)
+					go ytac(value, index, status)
 				}
 				// progress bar setting
 				var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
