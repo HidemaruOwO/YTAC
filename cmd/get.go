@@ -6,10 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -25,8 +23,11 @@ import (
 	"github.com/hidemaruowo/ytac/lib"
 )
 
+var converted int = 0
 var videoPath string
 var p [1]byte
+var convertList [][2]string
+var savedPathes []string
 
 var printBold = color.New(color.Bold)
 
@@ -41,17 +42,60 @@ func getCmd() *cobra.Command {
 			var index int = 0
 			var value string
 
+			var videoIDs []string
+
+			for _, value = range args {
+				if isYouTubeURL.MatchString(value) {
+					videoIDs = append(videoIDs, getVideoURL.FindStringSubmatch(value)[1])
+				} else {
+					videoIDs = append(videoIDs, value)
+				}
+			}
+
+			args = removeArrayDuplicate(videoIDs)
+
 			if len(args) != 0 {
+				for _, value = range args {
+					fmt.Println(value)
+				}
+				fmt.Println(len(args))
+
 				// read url loop
 				status := make(chan string)
 				defer close(status)
 				for index, value = range args {
-					if isYouTubeURL.MatchString(value) {
-						var videoID = getVideoURL.FindStringSubmatch(value)[1]
-						go ytac(videoID, index, status)
-					} else {
-						go ytac(value, index, status)
+					runDownload(value)
+					go ytac(value, index, status)
+				}
+				// progress bar setting
+				var tmpl = `{{ red "💿 Converting:" }} {{ bar . "[" (yellow "=") (rndcolor "~>") "." "]"}} {{percent .}}`
+				var max int64 = int64(len(args))
+				var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
+				var applyConverted int = converted
+				if len(args) == 1 {
+					bar.Increment()
+				} else {
+					for i := 0; i < applyConverted; i++ {
+						bar.Increment()
+						time.Sleep(time.Millisecond * 30)
 					}
+					for {
+						if applyConverted != converted {
+							for i := 0; converted-applyConverted > i; i++ {
+								bar.Increment()
+								time.Sleep(time.Millisecond * 30)
+							}
+						} else {
+							break
+						}
+						time.Sleep(time.Millisecond * 500)
+					}
+				}
+
+				bar.Finish()
+
+				for _, value = range savedPathes {
+					printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(value))
 				}
 				_ = <-status
 				var tempPath string = filepath.Join(lib.GetYtacPath(), "temp")
@@ -70,21 +114,17 @@ func getCmd() *cobra.Command {
 	return cmd
 }
 
+// TODOEND Downloadを同期処理で実行して、コンバート処理を非同期で実行する
+// TODOEND その後は変換処理が終わったあと、出力先をまとめて出力する
 func ytac(videoID string, index int, status chan<- string) {
-	chAudioConv := make(chan string)
-	var pathTitle [2]string
-	var convertList [][2]string
-	printBold.Println("✨ " + strconv.Itoa(index+1) + ", Running YTAC...")
-	pathTitle[0], pathTitle[1] = download(videoID)
-	convertList = append(convertList, pathTitle)
-
 	// TODO for文で回せるようにしたい
+	chAudioConv := make(chan string)
 	for _, pt := range convertList {
 		go audioConv(videoPath, pt[1], chAudioConv)
+		audioPath := <-chAudioConv
+		savedPathes = append(savedPathes, audioPath)
 	}
-	audioPath := <-chAudioConv
 	defer close(chAudioConv)
-	printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(audioPath))
 }
 
 func download(videoID string) (string, string) {
@@ -95,8 +135,7 @@ func download(videoID string) (string, string) {
 	video, err := client.GetVideo(videoID)
 	if err != nil {
 		printBold.Println("🔥 " + color.HiRedString("No YouTube videos were found with that VideoID") + "\nThe video may not exist or may be a private video")
-		panic(err)
-
+		os.Exit(1)
 	}
 
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
@@ -122,7 +161,7 @@ func download(videoID string) (string, string) {
 		lib.ShowImage(thumbnail)
 	}
 
-	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
+	var tmpl = `{{ red "🎥 Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
 	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
 	var barReader = bar.NewProxyReader(stream)
 	_, err = io.Copy(file, barReader)
@@ -134,21 +173,13 @@ func download(videoID string) (string, string) {
 	return videoPath, video.Title
 }
 
-func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
+func audioConv(videoPath string, videoTitle string, chAudioPath chan string) {
 	var today string = time.Now().Format("2006-01-02")
 	var distPath string = path.Join(lib.GetYtacPath(), "dist")
 	videoTitle = strings.Replace(videoTitle, "/", "", -1)
 	videoTitle = strings.Replace(videoTitle, "\\", "", -1)
-	// progress bar setting
-	// var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
-	// var max int64 = 100
-	// var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
 
 	var audioPath string = path.Join(distPath, today, videoTitle+".mp3")
-	// for i := 0; i < 70; i++ {
-	// 	bar.Increment()
-	// 	time.Sleep(time.Millisecond * 30)
-	// }
 	log.SetOutput(ioutil.Discard)
 	var err = ffmpeg_go.Input(videoPath).Output(audioPath).OverWriteOutput().Run()
 	if err != nil {
@@ -160,24 +191,17 @@ func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
 		}
 		lib.GenDistTodayDirectory()
 		printBold.Println("♻️  Restarting audioConv function")
-		audioConv(videoPath, videoTitle, chAudiPath)
+		audioConv(videoPath, videoTitle, chAudioPath)
 	}
-	// for i := 0; i < 30; i++ {
-	// 	bar.Increment()
-	// 	time.Sleep(time.Millisecond * 30)
-	// }
-	// bar.Finish()
-	chAudiPath <- audioPath
+	chAudioPath <- audioPath
+	converted += 1
 }
 
-func CheckCmdFFMPEG() {
-	// FIXME mainで呼び出すように変更したので、libに移動するのが望ましい
-	cmd := exec.Command("ffmpeg", "-version")
-	if err := cmd.Run(); err != nil {
-		fmt.Println("🔥 Failed to run ffmpeg command\nPlease install ffmpeg and set env path")
-		printBold.Println("🔎 Download Page: " + color.HiBlueString("https://ffmpeg.org/download.html"))
-		os.Exit(1)
-	}
+func runDownload(videoID string) {
+	var pathTitle [2]string
+	pathTitle[0], pathTitle[1] = download(videoID)
+	convertList = append(convertList, pathTitle)
+
 }
 
 func removeContents(dir string) error {
@@ -197,4 +221,16 @@ func removeContents(dir string) error {
 		}
 	}
 	return nil
+}
+
+func removeArrayDuplicate(args []string) []string {
+	results := make([]string, 0, len(args))
+	encountered := map[string]bool{}
+	for i := 0; i < len(args); i++ {
+		if !encountered[args[i]] {
+			encountered[args[i]] = true
+			results = append(results, args[i])
+		}
+	}
+	return results
 }
