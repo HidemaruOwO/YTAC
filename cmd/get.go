@@ -6,10 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -27,6 +25,8 @@ import (
 
 var videoPath string
 var p [1]byte
+var convertList [][2]string
+var savedPathes []string
 
 var printBold = color.New(color.Bold)
 
@@ -48,10 +48,15 @@ func getCmd() *cobra.Command {
 				for index, value = range args {
 					if isYouTubeURL.MatchString(value) {
 						var videoID = getVideoURL.FindStringSubmatch(value)[1]
+						runDownload(videoID)
 						go ytac(videoID, index, status)
 					} else {
+						runDownload(value)
 						go ytac(value, index, status)
 					}
+				}
+				for index, value = range savedPathes {
+					printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(value))
 				}
 				_ = <-status
 				var tempPath string = filepath.Join(lib.GetYtacPath(), "temp")
@@ -70,21 +75,18 @@ func getCmd() *cobra.Command {
 	return cmd
 }
 
+// TODOEND Downloadを同期処理で実行して、コンバート処理を非同期で実行する
+// TODO その後は変換処理が終わったあと、出力先をまとめて出力する
 func ytac(videoID string, index int, status chan<- string) {
 	chAudioConv := make(chan string)
-	var pathTitle [2]string
-	var convertList [][2]string
-	printBold.Println("✨ " + strconv.Itoa(index+1) + ", Running YTAC...")
-	pathTitle[0], pathTitle[1] = download(videoID)
-	convertList = append(convertList, pathTitle)
 
 	// TODO for文で回せるようにしたい
 	for _, pt := range convertList {
 		go audioConv(videoPath, pt[1], chAudioConv)
 	}
 	audioPath := <-chAudioConv
+	savedPathes = append(savedPathes, audioPath)
 	defer close(chAudioConv)
-	printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(audioPath))
 }
 
 func download(videoID string) (string, string) {
@@ -134,7 +136,7 @@ func download(videoID string) (string, string) {
 	return videoPath, video.Title
 }
 
-func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
+func audioConv(videoPath string, videoTitle string, chAudioPath chan string) {
 	var today string = time.Now().Format("2006-01-02")
 	var distPath string = path.Join(lib.GetYtacPath(), "dist")
 	videoTitle = strings.Replace(videoTitle, "/", "", -1)
@@ -160,24 +162,21 @@ func audioConv(videoPath string, videoTitle string, chAudiPath chan string) {
 		}
 		lib.GenDistTodayDirectory()
 		printBold.Println("♻️  Restarting audioConv function")
-		audioConv(videoPath, videoTitle, chAudiPath)
+		audioConv(videoPath, videoTitle, chAudioPath)
 	}
 	// for i := 0; i < 30; i++ {
 	// 	bar.Increment()
 	// 	time.Sleep(time.Millisecond * 30)
 	// }
 	// bar.Finish()
-	chAudiPath <- audioPath
+	chAudioPath <- audioPath
 }
 
-func CheckCmdFFMPEG() {
-	// FIXME mainで呼び出すように変更したので、libに移動するのが望ましい
-	cmd := exec.Command("ffmpeg", "-version")
-	if err := cmd.Run(); err != nil {
-		fmt.Println("🔥 Failed to run ffmpeg command\nPlease install ffmpeg and set env path")
-		printBold.Println("🔎 Download Page: " + color.HiBlueString("https://ffmpeg.org/download.html"))
-		os.Exit(1)
-	}
+func runDownload(videoID string) {
+	var pathTitle [2]string
+	pathTitle[0], pathTitle[1] = download(videoID)
+	convertList = append(convertList, pathTitle)
+
 }
 
 func removeContents(dir string) error {
