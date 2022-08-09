@@ -124,7 +124,6 @@ func download(videoID string) (string, string) {
 
 	var tmpl = `{{ red "Downloading:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{speed . | green }} {{percent .}}`
 	var bar = pb.ProgressBarTemplate(tmpl).Start64(int64(size))
-	//var reader = io.LimitReader(rand.Reader, int64(n))
 	var barReader = bar.NewProxyReader(stream)
 	_, err = io.Copy(file, barReader)
 	if err != nil {
