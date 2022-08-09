@@ -23,6 +23,7 @@ import (
 	"github.com/hidemaruowo/ytac/lib"
 )
 
+var converted int = 0
 var videoPath string
 var p [1]byte
 var convertList [][2]string
@@ -40,8 +41,12 @@ func getCmd() *cobra.Command {
 			var getVideoURL = regexp.MustCompile(`\?v=([^&]+)`)
 			var index int = 0
 			var value string
+			args = removeArrayDuplicate(args)
 
 			if len(args) != 0 {
+				for _, value = range args {
+					fmt.Println(value)
+				}
 				// read url loop
 				status := make(chan string)
 				defer close(status)
@@ -55,7 +60,32 @@ func getCmd() *cobra.Command {
 						go ytac(value, index, status)
 					}
 				}
-				for index, value = range savedPathes {
+				// progress bar setting
+				var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
+				var max int64 = int64(len(args))
+				var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
+				var applyConverted int = converted
+				for i := 0; i < applyConverted; i++ {
+					bar.Increment()
+					time.Sleep(time.Millisecond * 30)
+				}
+				for {
+					if applyConverted != converted {
+						for i := 0; converted-applyConverted > i; i++ {
+							bar.Increment()
+							time.Sleep(time.Millisecond * 30)
+						}
+						fmt.Println(applyConverted)
+						fmt.Println(converted)
+					} else {
+						break
+					}
+					time.Sleep(time.Millisecond * 500)
+				}
+
+				bar.Finish()
+
+				for _, value = range savedPathes {
 					printBold.Println(color.HiYellowString("==>") + " Saved path: " + color.HiBlueString(value))
 				}
 				_ = <-status
@@ -76,17 +106,16 @@ func getCmd() *cobra.Command {
 }
 
 // TODOEND Downloadを同期処理で実行して、コンバート処理を非同期で実行する
-// TODO その後は変換処理が終わったあと、出力先をまとめて出力する
+// TODOEND その後は変換処理が終わったあと、出力先をまとめて出力する
 func ytac(videoID string, index int, status chan<- string) {
-	chAudioConv := make(chan string)
-
 	// TODO for文で回せるようにしたい
 	for _, pt := range convertList {
+		chAudioConv := make(chan string)
 		go audioConv(videoPath, pt[1], chAudioConv)
+		audioPath := <-chAudioConv
+		savedPathes = append(savedPathes, audioPath)
+		defer close(chAudioConv)
 	}
-	audioPath := <-chAudioConv
-	savedPathes = append(savedPathes, audioPath)
-	defer close(chAudioConv)
 }
 
 func download(videoID string) (string, string) {
@@ -97,8 +126,7 @@ func download(videoID string) (string, string) {
 	video, err := client.GetVideo(videoID)
 	if err != nil {
 		printBold.Println("🔥 " + color.HiRedString("No YouTube videos were found with that VideoID") + "\nThe video may not exist or may be a private video")
-		panic(err)
-
+		os.Exit(1)
 	}
 
 	var formats = video.Formats.WithAudioChannels() // only get videos with audio
@@ -141,16 +169,8 @@ func audioConv(videoPath string, videoTitle string, chAudioPath chan string) {
 	var distPath string = path.Join(lib.GetYtacPath(), "dist")
 	videoTitle = strings.Replace(videoTitle, "/", "", -1)
 	videoTitle = strings.Replace(videoTitle, "\\", "", -1)
-	// progress bar setting
-	// var tmpl = `{{ red "Converting:" }} {{ bar . "[" (blue "=") (rndcolor "~>") "." "]"}} {{percent .}}`
-	// var max int64 = 100
-	// var bar = pb.ProgressBarTemplate(tmpl).Start64(max)
 
 	var audioPath string = path.Join(distPath, today, videoTitle+".mp3")
-	// for i := 0; i < 70; i++ {
-	// 	bar.Increment()
-	// 	time.Sleep(time.Millisecond * 30)
-	// }
 	log.SetOutput(ioutil.Discard)
 	var err = ffmpeg_go.Input(videoPath).Output(audioPath).OverWriteOutput().Run()
 	if err != nil {
@@ -164,12 +184,8 @@ func audioConv(videoPath string, videoTitle string, chAudioPath chan string) {
 		printBold.Println("♻️  Restarting audioConv function")
 		audioConv(videoPath, videoTitle, chAudioPath)
 	}
-	// for i := 0; i < 30; i++ {
-	// 	bar.Increment()
-	// 	time.Sleep(time.Millisecond * 30)
-	// }
-	// bar.Finish()
 	chAudioPath <- audioPath
+	converted += 1
 }
 
 func runDownload(videoID string) {
@@ -196,4 +212,16 @@ func removeContents(dir string) error {
 		}
 	}
 	return nil
+}
+
+func removeArrayDuplicate(args []string) []string {
+	results := make([]string, 0, len(args))
+	encountered := map[string]bool{}
+	for i := 0; i < len(args); i++ {
+		if !encountered[args[i]] {
+			encountered[args[i]] = true
+			results = append(results, args[i])
+		}
+	}
+	return results
 }
