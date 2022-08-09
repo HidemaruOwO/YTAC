@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+
 	"github.com/hidemaruowo/ytac/cmd"
+	"github.com/hidemaruowo/ytac/lib"
 )
 
 func main() {
@@ -11,5 +13,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%s: %v\n", os.Args[0], err)
 		os.Exit(-1)
 	}
-  cmd.CheckCmdFFMPEG()
+	lib.CheckCmdFFMPEG()
 }
